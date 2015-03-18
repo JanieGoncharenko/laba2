@@ -1,0 +1,89 @@
+import urllib2, datetime
+import pandas as pd
+from os import listdir, remove
+time = datetime.datetime.now()
+
+def set_url(id_name):
+    number_provice = {
+        '1': 24, '2': 25, '3': 5, '4': 6, '5': 27,
+        '6': 23, '7': 26, '8': 7, '9': 11, '10': 13,
+        '11': 14, '12': 15, '13': 16, '14': 17, '15': 18,
+        '16': 19, '17': 21, '18': 22, '19': 8, '20': 9,
+        '21': 10, '22': 1, '23': 3, '24': 2, '25': 4,
+        '26': 12, '27': 20
+    }.get(id_name)
+    if len(str(number_provice)) < 2:
+        return '0'+str(number_provice)
+    return str(number_provice)
+
+def download():
+    i = 1
+    while i < 28:
+        name = filter(lambda x: x.startswith('VHI_'+str(i)), listdir("VHI/."))
+        if len(name) > 0:
+            for n in name:
+                remove('VHI/'+n)
+        url = "http://www.star.nesdis.noaa.gov/smcd/emb/vci/gvix/G04/ts_L1/ByProvince/Mean/L1_Mean_UKR.R" + set_url(str(i)) + ".txt"
+        vhi_url = urllib2.urlopen(url)
+        out = open('VHI/VHI_'+str(i)+'_'+str(time)+'.csv','wb')
+        out.write(vhi_url.read())
+        out.close()
+        print ("VHI_" +str(i)+" is downloaded...")
+        i+=1
+    print ("All file download")
+
+def reading(province):
+    name = filter(lambda x: x.startswith('VHI_'+str(province)+'_'), listdir("VHI/."))
+    df = pd.read_csv('VHI/'+name[0])
+    return df
+
+def VHI_show(province, year):
+    df = reading(province)
+    df = df[(df['year']== int(year))]
+    print "VHI_show:"
+    print df
+    print
+
+def VHI_min_max(province, year):
+    df = reading(province)
+    df = df[(df['year']== int(year))]
+    print "VHI show min/max:"
+    print "VHI max:", df['VHI'].max()
+    print "VHI min:", df['VHI'].min()
+    print
+
+
+def VHI_LESS_15(province, percent):
+    df = reading(province)
+    df = df[(df['%Area_VHI_LESS_15'] >= int(percent))]
+    print "VHI_LESS_15"
+    print list(df['year'])
+    print
+    k = 1
+    while k < len(list(df['VHI'])):
+        print str(list(df['year'])[k])+'('+str(list(df['VHI'])[k])+')'
+        k += 1
+
+def VHI_LESS_35(province, percent):
+    df = reading(province)
+    df = df[df['%Area_VHI_LESS_35'] >= int(percent)]
+    print "VHI_LESS_35"
+    print list(df['year'])
+    print
+    k = 1
+    while k < len(list(df['VHI'])):
+        print str(list(df['year'])[k])+'('+str(list(df['VHI'])[k])+')'
+        k += 1
+
+def FavorableSummer(province):
+    df = reading(province)
+    var = df[(df['VHI'] > 60) & (df['week'] >= 20) & (df['week'] <= 32)]
+    print 'VHI >60 in summer'
+    print list(var['year'])
+
+#download()
+VHI_min_max('22', '1991')
+VHI_show('22', '1995')
+VHI_LESS_15('22', '5')
+VHI_LESS_35('22', '25')
+FavorableSummer('22')
